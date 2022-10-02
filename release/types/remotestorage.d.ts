@@ -9,6 +9,7 @@ import GoogleDrive from './googledrive';
 import Dropbox from './dropbox';
 import SyncError from './sync-error';
 import UnauthorizedError from './unauthorized-error';
+import { Remote } from "./Remote";
 import * as util from './util';
 interface RSModule {
     name: string;
@@ -46,7 +47,14 @@ declare class RemoteStorage {
     /**
      * Holds OAuth app keys for Dropbox, Google Drive
      */
-    apiKeys: object;
+    apiKeys: {
+        googledrive?: {
+            clientId: string;
+        };
+        dropbox?: {
+            appKey: string;
+        };
+    };
     /**
      * Holds the feature class instance, added by feature initialization
      * TODO use type Access
@@ -68,10 +76,9 @@ declare class RemoteStorage {
     delete: any;
     backend: 'remotestorage' | 'dropbox' | 'googledrive';
     /**
-     * Holds a WireClient instance, added by feature initialization
-     * TODO use correct type
+     * Holds a WireClient, GoogleDrive or Dropbox instance, added by feature initialization
      */
-    remote: any;
+    remote: Remote;
     local: IndexedDB | LocalStorage | InMemoryStorage;
     dropbox: Dropbox;
     googledrive: GoogleDrive;
