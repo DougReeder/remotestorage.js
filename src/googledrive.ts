@@ -11,12 +11,19 @@ import {
 } from './util';
 import {requestWithTimeout, RequestOptions} from "./requests";
 import {Remote, RemoteBase, RemoteResponse, RemoteSettings} from "./remote";
+// import {PickerBuilder, Picker, ResponseObject, DocumentObject, ParentDocumentObject, Thumbnail, ThumbnailObject, DocsUploadView, View, DocsView, ViewGroup, DocsViewMode, Feature, ViewId, Action, ServiceId, Audience, Document, Response, ViewToken, Type, ResourceId, Locales} from "@types/google.picker";
+
+declare var google: any;
+declare var gapi: any;
 
 const BASE_URL = 'https://www.googleapis.com';
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/auth';
-const AUTH_SCOPE = 'https://www.googleapis.com/auth/drive';
+const AUTH_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const SETTINGS_KEY = 'remotestorage:googledrive';
-const PATH_PREFIX = '/remotestorage';
+const API_URL = 'https://apis.google.com/js/api.js';
+const IDENTITY_SERVICE_URL = 'https://accounts.google.com/gsi/client';
+// const PATH_PREFIX = '/remotestorage';
+let path_prefix;
 
 const GD_DIR_MIME_TYPE = 'application/vnd.google-apps.folder';
 const RS_DIR_MIME_TYPE = 'application/json; charset=UTF-8';
@@ -77,7 +84,7 @@ function baseName (path: string): string {
  * @private
  */
 function googleDrivePath (path: string): string {
-  return cleanPath(`${PATH_PREFIX}/${path}`);
+  return cleanPath(`${path_prefix}/${path}`);
 }
 
 /**
@@ -157,11 +164,76 @@ function unHookGetItemURL (rs): void {
 class GoogleDrive extends RemoteBase implements Remote {
   clientId: string;
   token: string;
+  // Google Drive API
+  tokenClient: any;
+  accessToken: string;
+  pickerInited: boolean;
+  gisInited: boolean;
 
   _fileIdCache: FileIdCache;
 
   constructor(remoteStorage, clientId) {
     super(remoteStorage);
+
+    // Google API loading
+    // let tokenClient;
+    // let accessToken = null;
+    // let pickerInited = false;
+    // let gisInited = false;
+
+    // Use the API Loader script to load google.picker.
+    function onApiLoad() {
+      console.log('onApiLoad');
+      gapi.load('picker', onPickerApiLoad);
+    }
+
+    const onPickerApiLoad = () => {
+      console.log('onPickerApiLoad');
+      this.pickerInited = true;
+    }
+
+    const identityServiceLoaded = () => {
+      console.log('identityServiceLoaded');
+      this.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: AUTH_SCOPE,
+        callback: null, // defined later
+      });
+      this.gisInited = true;
+    };
+
+    const script1 = document.createElement('script');
+    script1.src = API_URL;
+    // script1.type = 'module';
+    script1.async = true;
+    script1.defer = true;
+    script1.onload = onApiLoad;
+    script1.onerror = (evt: ErrorEvent) => {
+      console.error('Could not load Google API', evt?.message, evt?.error);
+      this.rs._emit('error', new Error('Could not load Google API: ' + evt?.message));
+    };
+    document.body.appendChild(script1);
+
+    // import(GSI_URL).then(gsi => {
+    //   console.log('gsi:', gsi);
+    //   identityServiceLoaded();
+    // }).catch((err: Error) => {
+    //   console.error('Could not load Google Identity Service', err);
+    //   this.rs._emit('error', err);
+    // });
+    const script2 = document.createElement('script');
+    script2.src = IDENTITY_SERVICE_URL;
+    // script2.type = 'module';
+    // crossorigin="anonymous"
+    script2.async = true;
+    script2.defer = true;
+    script2.onload = identityServiceLoaded;
+    script2.onerror = (evt: ErrorEvent) => {
+      console.error('Could not load Google Identity Service', evt?.message, evt?.error);
+      this.rs._emit('error', new Error('Could not load Google Identity Service: ' + evt?.message));
+    };
+    document.body.appendChild(script2);
+
     this.online = true;
     this.storageApi = 'draft-dejong-remotestorage-19';
     this.addEvents(['connected', 'not-connected']);
@@ -241,6 +313,53 @@ class GoogleDrive extends RemoteBase implements Remote {
   connect (): void {
     this.rs.setBackend('googledrive');
     this.rs.authorize({ authURL: AUTH_URL, scope: AUTH_SCOPE, clientId: this.clientId });
+
+    this.createPicker();
+  }
+
+  createPicker() {
+    // our function
+    const pickerCallback = (data) => {
+      let url = 'nothing';
+      if (data[google.picker.Response.ACTION] === google.picker.Action.PICKED) {
+        const doc = data[google.picker.Response.DOCUMENTS][0];
+        url = doc[google.picker.Document.URL];
+      }
+      const message = `You picked: ${url}`;
+      console.info('pickerCallback', data, message);
+      // document.getElementById('result').textContent = message;
+    };
+
+    const showPicker = () => {
+      // Replace with your API key and App ID.
+      const picker = new google.picker.PickerBuilder()
+        .addView(google.picker.ViewId.FOLDERS)
+        .setOAuthToken(this.accessToken)
+        .setDeveloperKey(this.rs.apiKeys.googledrive.clientId)
+        .setCallback(pickerCallback)
+        .setAppId(this.clientId)
+        // .setMode(DocsViewMode.LIST)   // user hasn't granted access to thumbnails
+        .build();
+      picker.setVisible(true);
+    };
+
+    // Request an access token.
+    this.tokenClient.callback = async (response) => {
+      if (response.error !== undefined) {
+        throw (response);
+      }
+      this.accessToken = response.access_token;
+      showPicker();
+    };
+
+    if (this.accessToken === null) {
+      // Prompt the user to select a Google Account and ask for consent to share their data
+      // when establishing a new session.
+      this.tokenClient.requestAccessToken({prompt: 'consent'});
+    } else {
+      // Skip display of account chooser and consent dialog for an existing session.
+      this.tokenClient.requestAccessToken({prompt: ''});
+    }
   }
 
   /**
@@ -535,6 +654,7 @@ class GoogleDrive extends RemoteBase implements Remote {
         try {
           data = JSON.parse(response.responseText);
         } catch(e) {
+          console.error('non-JSON response from GoogleDrive:', e);
           return Promise.reject('non-JSON response from GoogleDrive');
         }
 

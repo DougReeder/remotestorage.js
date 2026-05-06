@@ -31,6 +31,10 @@ declare class FileIdCache {
 declare class GoogleDrive extends RemoteBase implements Remote {
     clientId: string;
     token: string;
+    tokenClient: object;
+    accessToken: string;
+    pickerInited: boolean;
+    gisInited: boolean;
     _fileIdCache: FileIdCache;
     constructor(remoteStorage: any, clientId: any);
     /**
@@ -49,6 +53,7 @@ declare class GoogleDrive extends RemoteBase implements Remote {
      * Initiate the authorization flow's OAuth dance.
      */
     connect(): void;
+    createPicker(): void;
     /**
      * Request a resource (file or directory).
      *
