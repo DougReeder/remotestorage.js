@@ -141,7 +141,7 @@ enum ApiKeyType {
 }
 
 /**
- * Create a `remoteStorage` class instance so:
+ * Create a `remoteStorage` class instance:
  *
  * ```js
  * const remoteStorage = new RemoteStorage();
@@ -323,16 +323,6 @@ enum ApiKeyType {
  * ### `sync-interval-change`
  *
  * Emitted when the sync interval changes
- *
- * @param cfg - Optional configuration object; all properties are optional
- * @param cfg.discovery - WebFinger discovery settings
- * @param cfg.discovery.allowPrivateAddresses - Whether WebFinger may target
- *   localhost / private-IP hosts. Defaults to `true` because cross-origin
- *   requests in browsers are already gated by the same-origin policy / CORS.
- *   Set to `false` in non-browser embedders to re-enable webfinger.js's SSRF
- *   guard.
- * @param cfg.discovery.timeout - WebFinger lookup timeout in milliseconds
- *   (default: 5000)
  */
 export class RemoteStorage {
   /**

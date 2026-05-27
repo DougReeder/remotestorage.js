@@ -64,7 +64,19 @@ rs-backup is not using remoteStorage.js at all, which you might also
 want to consider as an option when writing non-browser applications.
 :::
 
-## Caveats
+## Other considerations
+
+### Discovery
+
+In most cases, you will want to set `discovery.allowPrivateAddresses` to
+`false` when creating your [RemoteStorage][1] instance.
+
+This setting controls whether WebFinger may target localhost/private-IP hosts.
+It defaults to `true` because cross-origin requests in browsers are already
+gated by the same-origin policy / CORS.  Setting it to `false` in non-browser
+embedders will re-enable webfinger.js's SSRF guard.
+
+### Caveats
 
 - IndexedDB and localStorage are not supported by default in Node.js,
   so the library will fall back to in-memory storage for caching data
@@ -89,3 +101,5 @@ fact cache your data similar to how a browser would do it.
     accounts using the
     [chat-messages](https://www.npmjs.com/package/remotestorage-module-chat-messages)
     module
+
+[1]: ../api/remotestorage/classes/RemoteStorage.html
