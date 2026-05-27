@@ -27,14 +27,14 @@ token that you acquired beforehand:
 remoteStorage.connect('user@example.com', 'abcdef123456')
 ```
 
-This will skip the entire OAuth process, because you did that before in
-some other way, of course.
+This will skip the entire OAuth process in favor of acquiring a token
+beforehand, without the browser redirect.
 
 ## Obtaining a token
 
-For some programs, like e.g. a server daemon, you can usually acquire
-the token from your server manually, and then just configure it for
-example as environment variable, when running your program.
+For some programs, for example a server daemon, you can acquire the token from
+your RS server manually, and then use it from a config file or environment
+variable in your application.
 
 For CLI programs, and if you actually want to integrate the OAuth flow
 in your program, one possible solution is the following:
