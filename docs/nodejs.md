@@ -102,4 +102,4 @@ fact cache your data similar to how a browser would do it.
     [chat-messages](https://www.npmjs.com/package/remotestorage-module-chat-messages)
     module
 
-[1]: ../api/remotestorage/classes/RemoteStorage.html
+[1]: ./api/remotestorage/classes/RemoteStorage.html
