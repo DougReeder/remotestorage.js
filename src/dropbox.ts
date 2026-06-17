@@ -243,6 +243,7 @@ class Dropbox extends RemoteBase implements Remote {
       this.connected = false;
       if (hasLocalStorage) {
         localStorage.removeItem(SETTINGS_KEY);
+        localStorage.removeItem(`${SETTINGS_KEY}:shares`);
       }
       this.rs.setBackend(undefined);
     };

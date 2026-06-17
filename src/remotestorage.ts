@@ -728,6 +728,7 @@ export class RemoteStorage {
         href: null,
         storageApi: null,
         token: null,
+        refreshToken: null,
         properties: null
       });
     }
