@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [ master, stable ]
 
+permissions: {}
+
 jobs:
   build:
     name: node.js
@@ -18,6 +20,8 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v6.3.0
         with:
